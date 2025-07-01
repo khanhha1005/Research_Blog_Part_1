@@ -1,4 +1,4 @@
-# Research_Blog_Part1 : Arbitrage Opportunity Prediction System
+# Research_Blog_Part_1 : Arbitrage Opportunity Prediction System
 
 **Simple regression model to predict arbitrage profits and rank opportunities.**
 
