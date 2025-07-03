@@ -3,12 +3,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import warnings
 warnings.filterwarnings('ignore')
 
-device = torch.device('cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class ArbitrageDataset(Dataset):
     def __init__(self, X, y):
@@ -62,8 +61,6 @@ class LSTMArbitrageModel(nn.Module):
 class ArbitragePredictor:
     def __init__(self, sequence_length=200):
         self.sequence_length = sequence_length
-        self.feature_scaler = StandardScaler()
-        self.target_scaler = StandardScaler()
         self.model = None
         self.feature_columns = []
         
@@ -84,37 +81,33 @@ class ArbitragePredictor:
         df = df.sort_values('datetime').reset_index(drop=True)
         df = self.create_features(df)
         
-        base_features = ['price_HYPE_HyperEVM', 'price_HYPE_HyperCORE', 'Amount_HYPE_HyperEVM']
+        base_features = ['price_HYPE_HyperEVM', 'price_HYPE_HyperCORE', 'Amount_HYPE_HyperEVM', 'delta_USD']
         derived_features = ['price_ratio', 'price_spread', 'ma_ratio_3', 'ma_delta_3', 'price_change', 'ratio_change']
         self.feature_columns = base_features + derived_features
         
         return df
     
-    def create_sequences(self, data, target_col='delta_USD'):
+    def create_sequences(self, data, target_col='arb_profit'):
         features = data[self.feature_columns].values
         target = data[target_col].values
         
-        # Clip outliers
-        target_q95 = np.percentile(target, 95)
-        target_clipped = np.clip(target, 0, target_q95)
-        
-        # Scale data
-        features_scaled = self.feature_scaler.fit_transform(features)
-        target_scaled = self.target_scaler.fit_transform(target_clipped.reshape(-1, 1)).flatten()
-        
+        # No clipping or scaling - use raw data directly
         X, y = [], []
-        for i in range(len(features_scaled) - self.sequence_length):
-            X.append(features_scaled[i:(i + self.sequence_length)])
-            y.append(target_scaled[i + self.sequence_length])
+        for i in range(len(features) - self.sequence_length):
+            X.append(features[i:(i + self.sequence_length)])
+            y.append(target[i + self.sequence_length])
         
         return np.array(X), np.array(y)
     
-    def train(self, df, validation_split=0.2, epochs=150, batch_size=16, lr=0.001):
+    def train(self, df, validation_split=0.2, epochs=50, batch_size=16, lr=0.001):
         X, y = self.create_sequences(df)
         
         # Handle NaN
         X = np.nan_to_num(X)
         y = np.nan_to_num(y)
+        
+        print(f"Data shape: X={X.shape}, y={y.shape}")
+        print(f"Target range: min={y.min():.6f}, max={y.max():.6f}, mean={y.mean():.6f}")
         
         # Split data
         split_idx = int(len(X) * (1 - validation_split))
@@ -130,7 +123,7 @@ class ArbitragePredictor:
         
         # Initialize model
         input_size = X.shape[2]
-        self.model = LSTMArbitrageModel(input_size, hidden_size=128, num_layers=3, 
+        self.model = LSTMArbitrageModel(input_size, hidden_size=256, num_layers=5, 
                                        output_size=1, dropout=0.2).to(device)
         
         criterion = nn.MSELoss()
@@ -180,12 +173,8 @@ class ArbitragePredictor:
             
         features = window_data[self.feature_columns].values
         
-        try:
-            features_scaled = self.feature_scaler.transform(features)
-        except:
-            return 0.0
-        
-        sequence = features_scaled[-self.sequence_length:]
+        # No scaling - use raw features directly
+        sequence = features[-self.sequence_length:]
         
         self.model.eval()
         with torch.no_grad():
@@ -195,8 +184,8 @@ class ArbitragePredictor:
             if torch.isnan(prediction).any():
                 return 0.0
         
-        pred_scaled = prediction.cpu().numpy()[0][0]
-        pred_value = self.target_scaler.inverse_transform([[pred_scaled]])[0][0]
+        # Direct prediction value (no inverse transform needed)
+        pred_value = prediction.cpu().numpy()[0][0]
         
         return max(0.0, pred_value) if not np.isnan(pred_value) else 0.0
     
@@ -212,7 +201,7 @@ class ArbitragePredictor:
             try:
                 window_data = test_data.iloc[i-self.sequence_length:i]
                 pred = self.predict_single(window_data)
-                actual = test_data.iloc[i]['delta_USD']
+                actual = test_data.iloc[i]['arb_profit']
                 timestamp = test_data.iloc[i]['datetime']
                 
                 if not np.isnan(pred) and not np.isnan(actual):
@@ -230,11 +219,11 @@ class ArbitragePredictor:
         actuals = np.array(actuals)
         
         # Print results in requested format
-        print("\nTest Results:")
+        print("\nTest Results (Arbitrage Profit Prediction - RAW DATA VERSION):")
         print(f"{'DateTime':<12} {'Actual($)':<10} {'Predicted($)':<12} {'Error($)':<10} {'Error(%)':<8}")
         print("=" * 64)
         
-        for i in range(len(predictions)):
+        for i in range(min(20, len(predictions))):  # Show first 20 results
             dt = pd.to_datetime(timestamps[i]).strftime('%m-%d %H:%M')
             actual = actuals[i]
             pred = predictions[i]
@@ -250,31 +239,43 @@ class ArbitragePredictor:
         mape = np.mean(np.abs((actuals - predictions) / (actuals + 1e-8))) * 100
         r2 = r2_score(actuals, predictions)
 
-        print("\nSummary Metrics:")
+        print("\nSummary Metrics (Raw Data Model):")
         print(f"MAE : {mae:.4f}")
         print(f"RMSE: {rmse:.4f}")
         print(f"MAPE: {mape:.2f}%")
         print(f"R^2 : {r2:.4f}")
+        
+        print(f"\nTotal predictions evaluated: {len(predictions)}")
+        print(f"Prediction range: [{predictions.min():.4f}, {predictions.max():.4f}]")
+        print(f"Actual range: [{actuals.min():.4f}, {actuals.max():.4f}]")
 
 
 def main():
     predictor = ArbitragePredictor(sequence_length=200)
     
     # Load data
-    df = predictor.load_data('final_data_task1_swell.csv')
+    try:
+        df = predictor.load_data('final_data_task1_swell_CLEAN.csv')
+    except FileNotFoundError:
+        df = predictor.load_data('final_data_task1_swell.csv')
+    
+    print("Training Arbitrage Profit Prediction Model V3...")
+    print("Version: RAW DATA (no clipping, no scaling)")
+    print("Target: arb_profit (direct prediction from raw features)")
+    print("Features include: prices, volume, delta_USD, ratios, moving averages")
     
     # Train
     test_size = int(len(df) * 0.15)
     train_val_data = df.iloc[:-test_size]
     
-    predictor.train(train_val_data, epochs=1, batch_size=16, lr=0.001)
+    predictor.train(train_val_data, epochs=30, batch_size=32, lr=0.001)
     
     # Test
-    predictor.evaluate_test_set(df, test_split=0.15)
+    predictor.evaluate_test_set(df, test_split=0.1)
     
     # Save model
-    torch.save(predictor.model.state_dict(), 'clean_arbitrage_model.pth')
-    print("\nModel saved as 'clean_arbitrage_model.pth'")
+    torch.save(predictor.model.state_dict(), 'arbitrage_profit_model_v3.pth')
+    print("\nModel saved as 'arbitrage_profit_model_v3.pth'")
 
 if __name__ == "__main__":
     main() 
