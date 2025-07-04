@@ -21,8 +21,8 @@ def analyze_arb_profit_stats(df):
     """Analyze arb_profit statistics"""
     arb_profit = df['arb_profit']
     
-    print("\n📊 PHÂN TÍCH ARB_PROFIT:")
-    print(f"• Số lượng records: {len(arb_profit):,}")
+    print("\n📊 ARB_PROFIT ANALYSIS:")
+    print(f"• Number of records: {len(arb_profit):,}")
     print(f"• Min: {arb_profit.min():.6f}")
     print(f"• Max: {arb_profit.max():.6f}")
     print(f"• Mean: {arb_profit.mean():.6f}")
@@ -40,7 +40,7 @@ def analyze_arb_profit_stats(df):
     small_profits = arb_profit[arb_profit < 0.1]
     tiny_profits = arb_profit[arb_profit < 0.01]
     
-    print(f"\n💰 PHÂN TÍCH PROFIT NHỎ:")
+    print(f"\n💰 SMALL PROFITS ANALYSIS:")
     print(f"• Profits < 0.1: {len(small_profits):,} ({len(small_profits)/len(arb_profit)*100:.2f}%)")
     print(f"• Profits < 0.01: {len(tiny_profits):,} ({len(tiny_profits)/len(arb_profit)*100:.2f}%)")
     
@@ -48,21 +48,21 @@ def analyze_arb_profit_stats(df):
 
 def estimate_transaction_fees():
     """Estimate typical transaction fees for arbitrage"""
-    print("\n💸 ƯỚC TÍNH PHÍ GIAO DỊCH:")
-    print("• Phí swap DEX: ~0.3% mỗi lần")
-    print("• Phí bridge/transfer: ~$1-5")
+    print("\n💸 TRANSACTION FEES ESTIMATION:")
+    print("• DEX swap fee: ~0.3% per transaction")
+    print("• Bridge/transfer fee: ~$1-5")
     print("• Gas fees: ~$0.5-2")
     print("• Slippage: ~0.1-0.5%")
-    print("• Tổng ước tính: $2-10 + ~0.4-0.8% của volume")
+    print("• Total estimate: $2-10 + ~0.4-0.8% of volume")
     
     # For a typical arbitrage, minimum profit should cover these costs
     # Assuming average transaction size and fees
     min_profit_suggestion = 0.05  # $0.05 minimum
     percentage_fee = 0.008  # 0.8% total fees
     
-    print(f"\n🎯 KHUYẾN NGHỊ NGƯỠNG TỐI THIỂU:")
-    print(f"• Profit tuyệt đối: >= ${min_profit_suggestion}")
-    print(f"• Hoặc >= {percentage_fee*100}% của volume giao dịch")
+    print(f"\n🎯 MINIMUM THRESHOLD RECOMMENDATIONS:")
+    print(f"• Absolute profit: >= ${min_profit_suggestion}")
+    print(f"• Or >= {percentage_fee*100}% of transaction volume")
     
     return min_profit_suggestion, percentage_fee
 
@@ -79,10 +79,10 @@ def determine_cleaning_thresholds(df):
     # Lower threshold: Remove profits below $0.5 (aggressive filtering)
     lower_threshold = 0.5  # Fixed threshold: $0.5 minimum
     
-    print(f"\n🎯 NGƯỠNG CLEANING:")
-    print(f"• Loại bỏ arb_profit > {upper_threshold:.6f} (outliers cao)")
-    print(f"• Loại bỏ arb_profit < {lower_threshold:.6f} (dưới $0.5 - quá nhỏ)")
-    print(f"• Giữ lại: {lower_threshold:.6f} <= arb_profit <= {upper_threshold:.6f}")
+    print(f"\n🎯 CLEANING THRESHOLDS:")
+    print(f"• Remove arb_profit > {upper_threshold:.6f} (high outliers)")
+    print(f"• Remove arb_profit < {lower_threshold:.6f} (below $0.5 - too small)")
+    print(f"• Keep: {lower_threshold:.6f} <= arb_profit <= {upper_threshold:.6f}")
     
     return lower_threshold, upper_threshold
 
@@ -107,32 +107,32 @@ def clean_data_comprehensive(df, lower_threshold, upper_threshold):
     total_removed = high_removed + low_removed
     clean_count = len(clean_df)
     
-    print(f"\n🧹 KẾT QUẢ CLEANING TOÀN DIỆN:")
-    print(f"• Records gốc: {original_count:,}")
-    print(f"• Loại bỏ (quá cao): {high_removed:,} ({high_removed/original_count*100:.2f}%)")
-    print(f"• Loại bỏ (quá thấp): {low_removed:,} ({low_removed/original_count*100:.2f}%)")
-    print(f"• Tổng loại bỏ: {total_removed:,} ({total_removed/original_count*100:.2f}%)")
-    print(f"• Records clean: {clean_count:,} ({clean_count/original_count*100:.2f}%)")
+    print(f"\n🧹 COMPREHENSIVE CLEANING RESULTS:")
+    print(f"• Original records: {original_count:,}")
+    print(f"• Removed (too high): {high_removed:,} ({high_removed/original_count*100:.2f}%)")
+    print(f"• Removed (too low): {low_removed:,} ({low_removed/original_count*100:.2f}%)")
+    print(f"• Total removed: {total_removed:,} ({total_removed/original_count*100:.2f}%)")
+    print(f"• Clean records: {clean_count:,} ({clean_count/original_count*100:.2f}%)")
     
     # Analyze removed data
     if len(high_outliers) > 0:
-        print(f"\n📊 OUTLIERS CAO BỊ LOẠI:")
+        print(f"\n📊 REMOVED HIGH OUTLIERS:")
         print(f"• Min: {high_outliers['arb_profit'].min():.6f}")
         print(f"• Max: {high_outliers['arb_profit'].max():.6f}")
         print(f"• Mean: {high_outliers['arb_profit'].mean():.6f}")
         
         # Top 3 highest
         top_high = high_outliers.nlargest(3, 'arb_profit')
-        print(f"• Top 3 cao nhất:")
+        print(f"• Top 3 highest:")
         for i, (_, row) in enumerate(top_high.iterrows(), 1):
             print(f"  {i}. {row['arb_profit']:.6f} (amount: {row['Amount_HYPE_HyperEVM']:.2f})")
     
     if len(low_outliers) > 0:
-        print(f"\n📊 PROFITS THẤP BỊ LOẠI:")
+        print(f"\n📊 REMOVED LOW PROFITS:")
         print(f"• Min: {low_outliers['arb_profit'].min():.6f}")
         print(f"• Max: {low_outliers['arb_profit'].max():.6f}")
         print(f"• Mean: {low_outliers['arb_profit'].mean():.6f}")
-        print(f"• Lý do: Dưới ngưỡng $0.5 (quá nhỏ để có ý nghĩa)")
+        print(f"• Reason: Below $0.5 threshold (too small to be meaningful)")
     
     return clean_df, high_outliers, low_outliers
 
@@ -140,8 +140,8 @@ def analyze_clean_data(clean_df):
     """Analyze the cleaned data"""
     arb_profit = clean_df['arb_profit']
     
-    print(f"\n📊 PHÂN TÍCH DỮ LIỆU SAU KHI CLEAN:")
-    print(f"• Số lượng records: {len(arb_profit):,}")
+    print(f"\n📊 CLEANED DATA ANALYSIS:")
+    print(f"• Number of records: {len(arb_profit):,}")
     print(f"• Min: {arb_profit.min():.6f}")
     print(f"• Max: {arb_profit.max():.6f}")
     print(f"• Mean: {arb_profit.mean():.6f}")
@@ -150,14 +150,14 @@ def analyze_clean_data(clean_df):
     
     # Profit distribution in clean data
     profit_ranges = [
-        (0.02, 0.05, "Nhỏ"),
-        (0.05, 0.1, "Vừa"), 
-        (0.1, 0.5, "Tốt"),
-        (0.5, 1.0, "Cao"),
-        (1.0, float('inf'), "Rất cao")
+        (0.02, 0.05, "Small"),
+        (0.05, 0.1, "Medium"), 
+        (0.1, 0.5, "Good"),
+        (0.5, 1.0, "High"),
+        (1.0, float('inf'), "Very High")
     ]
     
-    print(f"\n💰 PHÂN PHỐI PROFIT SAU CLEAN:")
+    print(f"\n💰 PROFIT DISTRIBUTION AFTER CLEANING:")
     for min_val, max_val, label in profit_ranges:
         if max_val == float('inf'):
             count = len(arb_profit[arb_profit >= min_val])
@@ -301,7 +301,7 @@ def create_comprehensive_visualization(original_df, clean_df, high_outliers, low
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     plt.show()
     
-    print(f"\n📊 Đã lưu biểu đồ phân tích toàn diện vào: {output_file}")
+    print(f"\n📊 Saved comprehensive analysis chart to: {output_file}")
 
 def main():
     input_file = "final_data_task1_swell.csv"
@@ -310,7 +310,7 @@ def main():
     low_profits_file = "removed_low_profits.csv"
     plot_output_file = "comprehensive_data_cleaning.png"
     
-    print("🧹 COMPREHENSIVE DATA CLEANING - LOẠI BỎ OUTLIERS & PROFITS THẤP")
+    print("🧹 COMPREHENSIVE DATA CLEANING - REMOVE OUTLIERS & LOW PROFITS")
     print("=" * 70)
     
     # Load original data
@@ -330,42 +330,42 @@ def main():
     
     # Save all results
     clean_df.to_csv(clean_output_file, index=False)
-    print(f"\n💾 ĐÃ LƯU DỮ LIỆU CLEAN: {clean_output_file}")
+    print(f"\n💾 SAVED CLEAN DATA: {clean_output_file}")
     
     if len(high_outliers) > 0:
         high_outliers_sorted = high_outliers.sort_values('arb_profit', ascending=False)
         high_outliers_sorted.to_csv(high_outliers_file, index=False)
-        print(f"💾 ĐÃ LƯU HIGH OUTLIERS: {high_outliers_file}")
+        print(f"💾 SAVED HIGH OUTLIERS: {high_outliers_file}")
     
     if len(low_outliers) > 0:
         low_outliers_sorted = low_outliers.sort_values('arb_profit', ascending=True)
         low_outliers_sorted.to_csv(low_profits_file, index=False)
-        print(f"💾 ĐÃ LƯU LOW PROFITS: {low_profits_file}")
+        print(f"💾 SAVED LOW PROFITS: {low_profits_file}")
     
     # Create comprehensive visualization
     create_comprehensive_visualization(df, clean_df, high_outliers, low_outliers, plot_output_file)
     
     # Final summary
     print("\n" + "=" * 70)
-    print("📋 TÓM TẮT KẾT QUẢ CLEANING TOÀN DIỆN:")
-    print(f"• Ngưỡng thấp: arb_profit >= $0.50 (loại bỏ tất cả dưới $0.5)")
-    print(f"• Ngưỡng cao: arb_profit <= ${upper_threshold:.6f}")
-    print(f"• Records gốc: {len(df):,}")
-    print(f"• High outliers loại: {len(high_outliers):,}")
-    print(f"• Low profits loại: {len(low_outliers):,}")
-    print(f"• Records clean: {len(clean_df):,}")
-    print(f"• Tỷ lệ giữ lại: {len(clean_df)/len(df)*100:.1f}%")
+    print("📋 COMPREHENSIVE CLEANING RESULTS SUMMARY:")
+    print(f"• Lower threshold: arb_profit >= $0.50 (remove all below $0.5)")
+    print(f"• Upper threshold: arb_profit <= ${upper_threshold:.6f}")
+    print(f"• Original records: {len(df):,}")
+    print(f"• High outliers removed: {len(high_outliers):,}")
+    print(f"• Low profits removed: {len(low_outliers):,}")
+    print(f"• Clean records: {len(clean_df):,}")
+    print(f"• Retention rate: {len(clean_df)/len(df)*100:.1f}%")
     
-    print(f"\n🎯 FILES ĐÃ TẠO:")
-    print(f"• Dữ liệu clean (profitable): {clean_output_file}")
+    print(f"\n🎯 FILES CREATED:")
+    print(f"• Clean data (profitable): {clean_output_file}")
     print(f"• High outliers removed: {high_outliers_file}")
     print(f"• Low profits removed: {low_profits_file}")
-    print(f"• Biểu đồ phân tích: {plot_output_file}")
+    print(f"• Analysis chart: {plot_output_file}")
     
-    print(f"\n✅ HOÀN THÀNH! Dữ liệu clean đã loại bỏ:")
-    print(f"   - Outliers cao bất thường")
-    print(f"   - Tất cả profits dưới $0.5 (quá nhỏ)")
-    print(f"   - Chỉ giữ lại các giao dịch arbitrage có lợi nhuận >= $0.5")
+    print(f"\n✅ COMPLETED! Clean data has removed:")
+    print(f"   - Unusual high outliers")
+    print(f"   - All profits below $0.5 (too small)")
+    print(f"   - Only kept arbitrage transactions with profit >= $0.5")
 
 if __name__ == "__main__":
     main() 
