@@ -132,6 +132,9 @@ class ArbitragePredictor:
         
         print("Training...")
         
+        best_val_loss = float('inf')
+        best_model_state = None
+        
         for epoch in range(epochs):
             # Training
             self.model.train()
@@ -161,11 +164,76 @@ class ArbitragePredictor:
             train_loss /= len(train_loader)
             val_loss /= len(val_loader)
             
+            # Save best model
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_model_state = self.model.state_dict().copy()
+            
             scheduler.step(val_loss)
             
             # Print every 10 epochs
             if (epoch + 1) % 10 == 0:
                 print(f"Epoch {epoch+1:3d}/{epochs}: Train Loss: {train_loss:.6f}, Val Loss: {val_loss:.6f}")
+        
+        # Load best model
+        if best_model_state is not None:
+            self.model.load_state_dict(best_model_state)
+            print(f"Loaded best model with validation loss: {best_val_loss:.6f}")
+    
+    def save_model(self, filepath):
+        """Save the trained model with all necessary metadata for inference"""
+        if self.model is None:
+            raise ValueError("No trained model to save. Please train the model first.")
+        
+        # Prepare model data
+        model_data = {
+            'model_state_dict': self.model.state_dict(),
+            'model_config': {
+                'input_size': self.model.lstm.input_size,
+                'hidden_size': self.model.hidden_size,
+                'num_layers': self.model.num_layers,
+                'output_size': 1,
+                'dropout': 0.2
+            },
+            'predictor_config': {
+                'sequence_length': self.sequence_length,
+                'feature_columns': self.feature_columns
+            }
+        }
+        
+        torch.save(model_data, filepath)
+        print(f"Model saved successfully to {filepath}")
+    
+    def load_model(self, filepath):
+        """Load a trained model from file"""
+        if not torch.cuda.is_available():
+            model_data = torch.load(filepath, map_location='cpu')
+        else:
+            model_data = torch.load(filepath)
+        
+        # Load configurations
+        model_config = model_data['model_config']
+        predictor_config = model_data['predictor_config']
+        
+        # Update predictor attributes
+        self.sequence_length = predictor_config['sequence_length']
+        self.feature_columns = predictor_config['feature_columns']
+        
+        # Initialize and load model
+        self.model = LSTMArbitrageModel(
+            input_size=model_config['input_size'],
+            hidden_size=model_config['hidden_size'],
+            num_layers=model_config['num_layers'],
+            output_size=model_config['output_size'],
+            dropout=model_config['dropout']
+        ).to(device)
+        
+        self.model.load_state_dict(model_data['model_state_dict'])
+        self.model.eval()
+        
+        print(f"Model loaded successfully from {filepath}")
+        print(f"Model config: {model_config}")
+        print(f"Predictor config: {predictor_config}")
     
     def predict_single(self, window_data):
         if len(window_data) < self.sequence_length:
@@ -273,9 +341,9 @@ def main():
     # Test
     predictor.evaluate_test_set(df, test_split=0.1)
     
-    # Save model
-    torch.save(predictor.model.state_dict(), 'arbitrage_profit_model_v3.pth')
-    print("\nModel saved as 'arbitrage_profit_model_v3.pth'")
+    # Save model with metadata
+    predictor.save_model('arbitrage_profit_model_v3.pth')
+    print("\nModel saved with metadata as 'arbitrage_profit_model_v3.pth'")
 
 if __name__ == "__main__":
     main() 
