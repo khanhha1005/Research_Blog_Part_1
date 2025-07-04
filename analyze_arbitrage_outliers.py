@@ -22,8 +22,8 @@ def analyze_arb_profit_distribution(df):
     """Analyze the distribution of arb_profit"""
     arb_profit = df['arb_profit']
     
-    print("\n=== PHÂN TÍCH PHÂN PHỐI ARB_PROFIT ===")
-    print(f"Số lượng records: {len(arb_profit)}")
+    print("\n=== ARB_PROFIT DISTRIBUTION ANALYSIS ===")
+    print(f"Number of records: {len(arb_profit)}")
     print(f"Min: {arb_profit.min():.6f}")
     print(f"Max: {arb_profit.max():.6f}")
     print(f"Mean: {arb_profit.mean():.6f}")
@@ -96,7 +96,7 @@ def save_outliers_to_csv(outliers, method_name, output_file):
     outliers_sorted = outliers.sort_values('arb_profit', ascending=False)
     
     outliers_sorted.to_csv(output_file, index=False)
-    print(f"\n✅ Đã lưu {len(outliers_sorted)} outliers vào file: {output_file}")
+    print(f"\n✅ Saved {len(outliers_sorted)} outliers to file: {output_file}")
     
     # Show top 10 highest arb_profit
     print(f"\n=== TOP 10 HIGHEST ARB_PROFIT ({method_name}) ===")
@@ -171,12 +171,12 @@ def create_visualization(df, outliers, output_image):
     plt.savefig(output_image, dpi=300, bbox_inches='tight')
     plt.show()
     
-    print(f"\n📊 Đã lưu biểu đồ vào file: {output_image}")
+    print(f"\n📊 Saved chart to file: {output_image}")
 
 def main():
     input_file = "final_data_task1_swell.csv"
     
-    print("🔍 PHÂN TÍCH ARBITRAGE PROFIT OUTLIERS")
+    print("🔍 ARBITRAGE PROFIT OUTLIERS ANALYSIS")
     print("=" * 50)
     
     # Load data
@@ -210,18 +210,18 @@ def main():
     
     # Summary
     print("\n" + "=" * 50)
-    print("📋 TÓM TẮT KẾT QUẢ:")
-    print(f"• Tổng số records: {len(df)}")
+    print("📋 SUMMARY OF RESULTS:")
+    print(f"• Total records: {len(df)}")
     print(f"• Outliers (IQR conservative): {len(outliers_iqr)} records")
     print(f"• Outliers (IQR aggressive): {len(outliers_iqr_agg)} records")
     print(f"• Outliers (Z-score): {len(outliers_zscore)} records")
     print(f"• Outliers (Top 5%): {len(outliers_p95)} records")
     print(f"• Outliers (Top 1%): {len(outliers_p99)} records")
     
-    print(f"\n🎯 KHUYẾN NGHỊ:")
-    print(f"• Sử dụng file 'outliers_top5_percent.csv' để phân tích những giao dịch có lợi nhuận cao nhất")
-    print(f"• Sử dụng file 'outliers_iqr_conservative.csv' để phân tích outliers theo phương pháp thống kê chuẩn")
-    print(f"• Kiểm tra file 'arb_profit_analysis.png' để xem biểu đồ phân tích")
+    print(f"\n🎯 RECOMMENDATIONS:")
+    print(f"• Use file 'outliers_top5_percent.csv' to analyze transactions with highest profits")
+    print(f"• Use file 'outliers_iqr_conservative.csv' to analyze outliers using standard statistical method")
+    print(f"• Check file 'arb_profit_analysis.png' to view the analysis chart")
 
 if __name__ == "__main__":
     main() 
