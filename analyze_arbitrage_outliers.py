@@ -174,7 +174,7 @@ def create_visualization(df, outliers, output_image):
     print(f"\n📊 Saved chart to file: {output_image}")
 
 def main():
-    input_file = "final_data_task1_swell.csv"
+    input_file = "/root/Research_Blog_Part_1/2025_03_22_ARB_EVM_CORE_DATA.csv"
     
     print("🔍 ARBITRAGE PROFIT OUTLIERS ANALYSIS")
     print("=" * 50)

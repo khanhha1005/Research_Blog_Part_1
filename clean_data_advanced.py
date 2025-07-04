@@ -304,7 +304,7 @@ def create_comprehensive_visualization(original_df, clean_df, high_outliers, low
     print(f"\n📊 Saved comprehensive analysis chart to: {output_file}")
 
 def main():
-    input_file = "final_data_task1_swell.csv"
+    input_file = "/root/Research_Blog_Part_1/2025_03_22_ARB_EVM_CORE_DATA.csv"
     clean_output_file = "final_data_task1_swell_CLEAN.csv"
     high_outliers_file = "removed_high_outliers.csv"
     low_profits_file = "removed_low_profits.csv"

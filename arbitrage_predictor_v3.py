@@ -1,3 +1,4 @@
+from networkx import tree_data
 import pandas as pd
 import numpy as np
 import torch
@@ -290,7 +291,8 @@ class ArbitragePredictor:
         print("\nTest Results (Arbitrage Profit Prediction - RAW DATA VERSION):")
         print(f"{'DateTime':<12} {'Actual($)':<10} {'Predicted($)':<12} {'Error($)':<10} {'Error(%)':<8}")
         print("=" * 64)
-        
+        # help print the size of train and test data
+        print(f"Test data size: {len(test_data)}")
         for i in range(min(20, len(predictions))):  # Show first 20 results
             dt = pd.to_datetime(timestamps[i]).strftime('%m-%d %H:%M')
             actual = actuals[i]
@@ -323,9 +325,9 @@ def main():
     
     # Load data
     try:
-        df = predictor.load_data('final_data_task1_swell_CLEAN.csv')
+        df = predictor.load_data('/root/Research_Blog_Part_1/Data/final_data_task1_swell_CLEAN.csv')
     except FileNotFoundError:
-        df = predictor.load_data('final_data_task1_swell.csv')
+        df = predictor.load_data('/root/Research_Blog_Part_1/Data/final_data_task1_swell.csv')
     
     print("Training Arbitrage Profit Prediction Model V3...")
     print("Version: RAW DATA (no clipping, no scaling)")
